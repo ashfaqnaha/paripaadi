@@ -2,14 +2,14 @@ const $=id=>document.getElementById(id);
 let candidates=[],candidateIndex=0,activeName="",animationFrame=0;
 function showPrompt(name){
  const occasion=findEvent(name);
- if(!occasion){hidePrompt();$('event').setCustomValidity('Choose a festival from the suggestions so we can use a recognizable visual.');$('event').reportValidity();return;}
+ if(!occasion){hidePrompt();$('event').setCustomValidity('Choose a festival.');$('event').reportValidity();return;}
  candidates=shortlist(occasion).kept;
  candidateIndex=0;activeName=name;
  cancelAnimationFrame(animationFrame);
  $('prompt').classList.remove('scrambling');
  $('prompt').readOnly=false;
  $('copy').disabled=false;
- $('event').value=name;
+ $('event').value=occasion.name;
  $('prompt').value=generatePrompt(name,candidates[0]);
  $('regenerate').disabled=candidates.length<2;
  $('regenerate').title=candidates.length<2?'No further ranked matches for this festival.':'';
@@ -18,11 +18,30 @@ function showPrompt(name){
  $('copy').textContent='Copy prompt';
  return $('prompt').value;
 }
-$('festivals').innerHTML=EVENTS.map(e=>`<option value="${e.name}"></option>`).join('');
+let manuallySelected=false,lastCalendarDay='';
+function populateFestivals(){
+ const today=indiaToday();if(today===lastCalendarDay)return;
+ const previous=$('event').value;lastCalendarDay=today;
+ const upcoming=upcomingEvents(today);
+ $('event').replaceChildren(...upcoming.map(({event,date})=>{
+  const option=document.createElement('option');option.value=event.name;
+  const dateLabel=date?new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')):'';
+  option.textContent=event.name+(dateLabel?' · '+dateLabel:'')+(date&&event.id==='eid'?' (expected)':'');return option;
+ }));
+ if(manuallySelected&&findEvent(previous)){$('event').value=previous;return;}
+ const next=upcoming.find(entry=>entry.date);
+ if(next){$('event').value=next.event.name;}else{
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Select a festival';placeholder.disabled=true;$('event').prepend(placeholder);$('event').value='';
+ }
+ hidePrompt();
+}
+populateFestivals();
+window.addEventListener('focus',populateFestivals);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)populateFestivals();});
 $('festival-form').addEventListener('submit',e=>{e.preventDefault();const name=$('event').value.trim();if(!name){$('event').setCustomValidity('Enter a festival or holiday.');$('event').reportValidity();return;}showPrompt(name);});
 function hidePrompt(){ cancelAnimationFrame(animationFrame);$('result').hidden=true; $('prompt').value=''; }
-$('event').addEventListener('input',()=>{$('event').setCustomValidity('');hidePrompt();});
-window.addEventListener('pageshow',hidePrompt);
+$('event').addEventListener('change',()=>{manuallySelected=true;$('event').setCustomValidity('');hidePrompt();});
+window.addEventListener('pageshow',()=>{populateFestivals();hidePrompt();});
 function replaceWithScramble(text){
  cancelAnimationFrame(animationFrame);
  const box=$('prompt');
@@ -53,4 +72,4 @@ $('copy').addEventListener('click',async()=>{
  $('copy').textContent=success?'Copied':'Copy prompt';
  $('status').textContent=success?'Paste it into your image-generation tool.':'Press Ctrl+C or ⌘C, then paste into your image-generation tool.';
 });
-if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'choose_festival',description:'Set the festival field. The user must press Get prompt to reveal the prompt.',inputSchema:{type:'object',properties:{festival:{type:'string',minLength:1,maxLength:100}},required:['festival'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.festival!=='string'||!input.festival.trim()||input.festival.length>100)throw new Error('Enter a festival name of 1–100 characters.');$('event').value=input.festival.trim();hidePrompt();return {festival:$('event').value,nextAction:'Press Get prompt'};}})).catch(()=>{});}catch{}}
+if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'choose_festival',description:'Set the festival field. The user must press Get prompt to reveal the prompt.',inputSchema:{type:'object',properties:{festival:{type:'string',minLength:1,maxLength:100}},required:['festival'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.festival!=='string'||!input.festival.trim()||input.festival.length>100)throw new Error('Enter a festival name of 1–100 characters.');const event=findEvent(input.festival);if(!event)throw new Error('Choose a supported festival.');manuallySelected=true;$('event').value=event.name;hidePrompt();return {festival:$('event').value,nextAction:'Press Get prompt'};}})).catch(()=>{});}catch{}}
