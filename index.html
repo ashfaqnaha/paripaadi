@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>School Prompts</title><meta name="description" content="Turn school objects and festival cues into considered image-generation prompts."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23292dff'/%3E%3Cpath d='M9 23L12 15L22 5L27 10L17 20Z' fill='white'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"><script defer src="engine.js"></script><script defer src="app.js"></script></head>
+<body>
+<main>
+  <form id="festival-form">
+    <label class="sr-only" for="event">Festival or holiday</label>
+    <div class="input-row"><input id="event" list="festivals" placeholder="Enter a paripadi name. eg: Christmas" required maxlength="100" autocomplete="off"><datalist id="festivals"></datalist><button type="submit">Get prompt</button></div>
+  </form>
+  <section id="result" hidden aria-label="Your image prompt">
+    <label class="sr-only" for="prompt">Your image-generation prompt</label>
+    <textarea id="prompt" spellcheck="false"></textarea>
+    <div class="copy-row"><p id="status" role="status" aria-live="polite">Copy this into your image-generation tool.</p><div class="actions"><button id="regenerate" class="secondary" type="button">Regenerate</button><button id="copy" type="button">Copy prompt</button></div></div>
+  </section>
+</main>
+</body></html>
